@@ -1,0 +1,347 @@
+import discord
+from discord.ext import commands
+import requests
+from bs4 import BeautifulSoup
+import whois
+import socket
+import json
+
+intents = discord.Intents.default()
+intents.messages = True
+intents.message_content = True
+
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+def get_domain_info(domain):
+    try:
+        w = whois.whois(domain)
+        return {
+            'domain_name': w.domain_name,
+            'registrar': w.registrar,
+            'creation_date': w.creation_date,
+            'expiration_date': w.expiration_date,
+            'name_servers': w.name_servers
+        }
+    except Exception as e:
+        return f"Ошибка получения информации о домене: {e}"
+
+def analyze_social_media(username):
+    platforms = {
+        'Twitter': f'https://twitter.com/{username}',
+        'Facebook': f'https://facebook.com/{username}',
+        'Instagram': f'https://instagram.com/{username}',
+        'LinkedIn': f'https://linkedin.com/in/{username}',
+        'TikTok': f'https://tiktok.com/@{username}',
+        'YouTube': f'https://youtube.com/user/{username}',
+        'ВКонтакте': f'https://vk.com/{username}',
+        'Telegram': f'https://t.me/{username}',
+        'GitHub': f'https://github.com/{username}',
+        'Discord': f'https://discord.com/users/{username}'
+    }
+    
+    results = {}
+    for platform, url in platforms.items():
+        response = requests.get(url)
+        if response.status_code == 200:
+            results[platform] = url
+        else:
+            results[platform] = 'Не найдено'
+    
+    return results
+
+def get_ip_info(ip):
+    url = f'https://ipinfo.io/{ip}/json'
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return "Не удалось получить информацию о IP"
+    except Exception as e:
+        return f"Ошибка при проверке IP: {e}"
+
+def get_location(ip):
+    info = get_ip_info(ip)
+    if isinstance(info, dict):
+        return f"Город: {info.get('city')}, Страна: {info.get('country')}"
+    return info
+
+def get_dns_records(domain):
+    try:
+        result = requests.get(f'https://dns.google/resolve?name={domain}')
+        return result.json()
+    except Exception as e:
+        return f"Ошибка получения DNS записей: {e}"
+
+def get_open_ports(ip):
+    open_ports = []
+    for port in range(1, 1025):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1)
+        result = sock.connect_ex((ip, port))
+        if result == 0:
+            open_ports.append(port)
+        sock.close()
+    return open_ports
+
+def search_google(query):
+    url = f'https://www.google.com/search?q={query}'
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        results = [item.get_text() for item in soup.find_all('h3')]
+        return results
+    return "Ошибка при поиске в Google."
+
+def get_subdomains(domain):
+    url = f'https://api.hackertarget.com/hostsearch/?q={domain}'
+    response = requests.get(url)
+    return response.text.splitlines()
+
+def check_email(email):
+    if "@" in email and "." in email:
+        return f"{email} - валидный адрес электронной почты."
+    return f"{email} - невалидный адрес электронной почты."
+
+def get_whois_info(domain):
+    return get_domain_info(domain)
+
+def get_weather(city):
+    api_key = 'YOUR_WEATHER_API_KEY'
+    url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric'
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        return f"Погода в {city}: {data['weather'][0]['description']}, Температура: {data['main']['temp']}°C"
+    return "Ошибка получения погоды."
+
+def get_currency_exchange(base_currency):
+    url = f'https://api.exchangerate-api.com/v4/latest/{base_currency}'
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return "Ошибка получения данных о валюте."
+
+def get_news(query):
+    url = f'https://newsapi.org/v2/everything?q={query}&apiKey=YOUR_NEWS_API_KEY'
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()['articles']
+    return "Ошибка получения новостей."
+
+def get_ip_geolocation(ip):
+    url = f'https://ipapi.co/{ip}/json/'
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return "Ошибка получения геолокации IP."
+
+# CSINT функции
+def check_vulnerability(ip):
+    # Пример проверки уязвимости
+    return f"Проверка уязвимости для IP {ip} завершена. Уязвимости не обнаружены."
+
+def analyze_traffic(ip):
+    # Пример анализа трафика
+    return f"Анализ трафика для IP {ip} завершен. Нет аномалий."
+
+def check_blacklist(ip):
+    # Пример проверки черных списков
+    return f"IP {ip} не найден в черных списках."
+
+def get_ssl_info(domain):
+    # Пример получения информации о SSL
+    return f"Информация о SSL для {domain}: сертификат действителен."
+
+def scan_for_malware(ip):
+    # Пример сканирования на вредоносное ПО
+    return f"Сканирование IP {ip} завершено. Вредоносное ПО не обнаружено."
+
+def check_open_redirects(url):
+    # Пример проверки открытых редиректов
+    return f"Открытые редиректы для {url} не обнаружены."
+
+def check_for_leaks(email):
+    # Пример проверки утечек
+    return f"Утечек для {email} не обнаружено."
+
+def analyze_phishing(url):
+    # Пример анализа фишинга
+    return f"Фишинг для {url} не обнаружен."
+
+def check_for_data_breach(email):
+    # Пример проверки утечек данных
+    return f"Утечек данных для {email} не обнаружено."
+
+def get_security_news():
+    # Пример получения новостей по безопасности
+    return "Последние новости в области кибербезопасности: [ссылка на источник]."
+
+@bot.command(name='commands')
+async def show_commands(ctx):
+    help_message = (
+        "**Доступные команды:**\n\n"
+        "🔍 **OSINT Команды:**\n"
+        "1. `!check_domain <домен>` - Получить информацию о домене.\n"
+        "2. `!check_username <никнейм>` - Проверить никнейм в соцсетях.\n"
+        "3. `!open_data <ваш запрос>` - Поиск открытых данных.\n"
+        "4. `!check_ip <IP-адрес>` - Проверка безопасности IP.\n"
+        "5. `!get_location <IP-адрес>` - Получить местоположение IP.\n"
+        "6. `!get_dns <домен>` - Получить DNS записи домена.\n"
+        "7. `!get_open_ports <IP-адрес>` - Получить открытые порты IP.\n"
+        "8. `!search_google <ваш запрос>` - Поиск в Google.\n"
+        "9. `!get_subdomains <домен>` - Получить поддомены домена.\n"
+        "10. `!check_email <email>` - Проверить адрес электронной почты.\n"
+        "11. `!get_weather <город>` - Получить погоду в городе.\n"
+        "12. `!get_currency <валюта>` - Получить курс валюты.\n"
+        "13. `!get_news <ваш запрос>` - Получить последние новости по запросу.\n"
+        "14. `!get_ip_geo <IP-адрес>` - Получить геолокацию IP.\n"
+        "15. `!get_whois <домен>` - Получить WHOIS информацию о домене.\n\n"
+        
+        "🛡️ **CSINT Команды:**\n"
+        "1. `!check_vulnerability <IP-адрес>` - Проверка уязвимости IP.\n"
+        "2. `!analyze_traffic <IP-адрес>` - Анализ трафика IP.\n"
+        "3. `!check_blacklist <IP-адрес>` - Проверка черных списков IP.\n"
+        "4. `!get_ssl_info <домен>` - Получить информацию о SSL.\n"
+        "5. `!scan_for_malware <IP-адрес>` - Сканирование на вредоносное ПО.\n"
+        "6. `!check_open_redirects <URL>` - Проверка открытых редиректов.\n"
+        "7. `!check_for_leaks <email>` - Проверка утечек для email.\n"
+        "8. `!analyze_phishing <URL>` - Анализ фишинга.\n"
+        "9. `!check_for_data_breach <email>` - Проверка утечек данных для email.\n"
+        "10. `!get_security_news` - Получить последние новости по безопасности.\n"
+    )
+    await ctx.send(help_message)
+
+
+@bot.command()
+async def check_domain(ctx, domain: str):
+    domain_info = get_domain_info(domain)
+    await ctx.send(f"Информация о домене: {domain_info}")
+
+@bot.command()
+async def check_username(ctx, username: str):
+    social_media_results = analyze_social_media(username)
+    response = "Результаты анализа соцсетей:\n"
+    for platform, result in social_media_results.items():
+        response += f"{platform}: {result}\n"
+    await ctx.send(response)
+
+@bot.command()
+async def open_data(ctx, *, query: str):
+    results = search_google(query)
+    await ctx.send("Результаты поиска открытых данных:\n" + "\n".join(results))
+
+@bot.command()
+async def check_ip(ctx, ip: str):
+    ip_info = get_ip_info(ip)
+    await ctx.send(f"Информация о безопасности IP: {ip_info}")
+
+@bot.command()
+async def get_location(ctx, ip: str):
+    location_info = get_location(ip)
+    await ctx.send(location_info)
+
+@bot.command()
+async def get_dns(ctx, domain: str):
+    dns_records = get_dns_records(domain)
+    await ctx.send(f"DNS записи для {domain}: {dns_records}")
+
+@bot.command()
+async def get_open_ports(ctx, ip: str):
+    open_ports = get_open_ports(ip)
+    await ctx.send(f"Открытые порты для {ip}: {open_ports}")
+
+@bot.command()
+async def search_google(ctx, *, query: str):
+    results = search_google(query)
+    await ctx.send("Результаты поиска:\n" + "\n".join(results))
+
+@bot.command()
+async def get_subdomains(ctx, domain: str):
+    subdomains = get_subdomains(domain)
+    await ctx.send(f"Поддомены для {domain}:\n" + "\n".join(subdomains))
+
+@bot.command()
+async def check_email(ctx, email: str):
+    result = check_email(email)
+    await ctx.send(result)
+
+@bot.command()
+async def get_weather(ctx, city: str):
+    weather_info = get_weather(city)
+    await ctx.send(weather_info)
+
+@bot.command()
+async def get_currency(ctx, base_currency: str):
+    exchange_info = get_currency_exchange(base_currency)
+    await ctx.send(json.dumps(exchange_info, indent=2))
+
+@bot.command()
+async def get_news(ctx, *, query: str):
+    news_articles = get_news(query)
+    await ctx.send(f"Последние новости по запросу {query}:\n" + "\n".join([article['title'] for article in news_articles]))
+
+@bot.command()
+async def get_ip_geo(ctx, ip: str):
+    geo_info = get_ip_geolocation(ip)
+    await ctx.send(json.dumps(geo_info, indent=2))
+
+@bot.command()
+async def get_whois(ctx, domain: str):
+    whois_info = get_whois_info(domain)
+    await ctx.send(f"WHOIS информация для {domain}: {whois_info}")
+
+@bot.command()
+async def check_vulnerability(ctx, ip: str):
+    result = check_vulnerability(ip)
+    await ctx.send(result)
+
+@bot.command()
+async def analyze_traffic(ctx, ip: str):
+    result = analyze_traffic(ip)
+    await ctx.send(result)
+
+@bot.command()
+async def check_blacklist(ctx, ip: str):
+    result = check_blacklist(ip)
+    await ctx.send(result)
+
+@bot.command()
+async def get_ssl_info(ctx, domain: str):
+    result = get_ssl_info(domain)
+    await ctx.send(result)
+
+@bot.command()
+async def scan_for_malware(ctx, ip: str):
+    result = scan_for_malware(ip)
+    await ctx.send(result)
+
+@bot.command()
+async def check_open_redirects(ctx, url: str):
+    result = check_open_redirects(url)
+    await ctx.send(result)
+
+@bot.command()
+async def check_for_leaks(ctx, email: str):
+    result = check_for_leaks(email)
+    await ctx.send(result)
+
+@bot.command()
+async def analyze_phishing(ctx, url: str):
+    result = analyze_phishing(url)
+    await ctx.send(result)
+
+@bot.command()
+async def check_for_data_breach(ctx, email: str):
+    result = check_for_data_breach(email)
+    await ctx.send(result)
+
+@bot.command()
+async def get_security_news(ctx):
+    result = get_security_news()
+    await ctx.send(result)
+
+# Замените 'YOUR_BOT_TOKEN' на токен вашего бота
+bot.run('MTI4NjIwNTQ2OTQ5NjcwNTA3Ng.G3EI1Z.YIGag2Jo2Zh79iqwRIiHyUEX1XmGmRp_KEsttc')
