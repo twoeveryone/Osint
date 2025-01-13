@@ -344,4 +344,4 @@ async def get_security_news(ctx):
     await ctx.send(result)
 
 # Замените 'YOUR_BOT_TOKEN' на токен вашего бота
-bot.run('MTI4NjIwNTQ2OTQ5NjcwNTA3Ng.G3EI1Z.YIGag2Jo2Zh79iqwRIiHyUEX1XmGmRp_KEsttc')
+bot.run('')
